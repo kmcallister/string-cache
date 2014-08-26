@@ -24,7 +24,7 @@ use syntax::ext::base::{ExtCtxt, MacResult, MacExpr};
 use syntax::parse::token::{get_ident, InternedString, LIT_STR, IDENT};
 
 use std::iter::Chain;
-use std::slice::{Items, Found, NotFound};
+use std::slice::Items;
 use std::gc::Gc;
 
 mod data;
@@ -54,7 +54,7 @@ fn all_atoms<'a>() -> Chain<Items<'a, &'static str>, Items<'a, &'static str>> {
 
 // Build a PhfMap yielding static atom IDs.
 // Takes no arguments.
-fn expand_static_atom_map(cx: &mut ExtCtxt, sp: Span, tt: &[TokenTree]) -> Box<MacResult+'static> {
+fn expand_static_atom_map(cx: &mut ExtCtxt, sp: Span, tt: &[TokenTree]) -> Box<MacResult> {
     bail_if!(tt.len() != 0, cx, sp, "Usage: static_atom_map!()");
     let tts: Vec<TokenTree> = all_atoms().enumerate().flat_map(|(i, k)| {
         let i = i as u32;
@@ -65,7 +65,7 @@ fn expand_static_atom_map(cx: &mut ExtCtxt, sp: Span, tt: &[TokenTree]) -> Box<M
 
 // Build the array to convert IDs back to strings.
 // FIXME: share storage with the PhfMap keys.
-fn expand_static_atom_array(cx: &mut ExtCtxt, sp: Span, tt: &[TokenTree]) -> Box<MacResult+'static> {
+fn expand_static_atom_array(cx: &mut ExtCtxt, sp: Span, tt: &[TokenTree]) -> Box<MacResult> {
     bail_if!(tt.len() != 0, cx, sp, "Usage: static_atom_array!()");
     let tts: Vec<TokenTree> = all_atoms().flat_map(|k|
         quote_tokens!(&mut *cx, $k,).move_iter()
@@ -84,13 +84,9 @@ fn atom_tok_to_str(t: &TokenTree) -> Option<InternedString> {
 fn find_atom(name: InternedString) -> Option<uint> {
     // Use bsearch instead of bsearch_elem because of type mismatch
     // between &'t str and &'static str.
-    match data::fast_set_atoms.binary_search(|&x| x.cmp(&name.get())) {
-        Found(i) => Some(i),
-        NotFound(_) => match data::other_atoms.binary_search(|&x| x.cmp(&name.get())) {
-            Found(i) => Some(i+64),
-            NotFound(_) => None,
-        },
-    }
+    data::fast_set_atoms.bsearch(|&x| x.cmp(&name.get())).or_else(||
+        data::other_atoms.bsearch(|&x| x.cmp(&name.get())).map(|i| i+64))
+
 }
 
 struct AtomResult {
@@ -109,7 +105,7 @@ impl MacResult for AtomResult {
 }
 
 // Translate `atom!(title)` or `atom!("font-weight")` into an `Atom` constant or pattern.
-fn expand_atom(cx: &mut ExtCtxt, sp: Span, tt: &[TokenTree]) -> Box<MacResult+'static> {
+fn expand_atom(cx: &mut ExtCtxt, sp: Span, tt: &[TokenTree]) -> Box<MacResult> {
     let usage = "Usage: atom!(html) or atom!(\"font-weight\")";
     let name = match tt {
         [ref t] => expect!(cx, sp, atom_tok_to_str(t), usage),

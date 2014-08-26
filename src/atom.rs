@@ -17,7 +17,7 @@ use core::ptr;
 use core::slice;
 use core::slice::bytes;
 use core::str;
-use core::atomic::{AtomicInt, SeqCst};
+use core::atomics::{AtomicInt, SeqCst};
 use alloc::heap;
 use collections::string::String;
 use collections::hash::{Hash, Hasher, sip};

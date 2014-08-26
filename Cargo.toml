@@ -5,9 +5,11 @@ version = "0.0.0"
 authors = [ "The Servo Project Developers" ]
 
 [dependencies.phf]
-git = "https://github.com/sfackler/rust-phf"
+git = "https://github.com/kmcallister/rust-phf"
+rev = "servo"
 [dependencies.phf_mac]
-git = "https://github.com/sfackler/rust-phf"
+git = "https://github.com/kmcallister/rust-phf"
+rev = "servo"
 
 [dependencies.string_cache_macros]
 path = "macros"
